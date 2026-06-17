@@ -1,6 +1,7 @@
 import { prisma } from "../../src/db";
 import type { Prisma } from "../../src/generated/prisma/client";
 import type { AvatarVideoModel } from "../../src/generated/prisma/models";
+import { generateVideo } from "../../src/huggingface";
 
 type AvatarVideoWithReferences = Prisma.AvatarVideoGetPayload<{
   include: { references: { include: { avatar: true } } };
@@ -36,7 +37,21 @@ export async function startAvatarVideoGeneration(
     });
   }
 
+  // Kick off HF video generation in the background
+  void runVideoGeneration(video.id, prompt);
+
   return { video };
+}
+
+async function runVideoGeneration(videoId: string, prompt: string) {
+  try {
+    await prisma.avatarVideo.update({ where: { id: videoId }, data: { status: "PROCESSING" } });
+    const resultUrl = await generateVideo(prompt);
+    await prisma.avatarVideo.update({ where: { id: videoId }, data: { status: "COMPLETED", resultUrl } });
+  } catch (err) {
+    console.error("Video generation failed:", err);
+    await prisma.avatarVideo.update({ where: { id: videoId }, data: { status: "FAILED" } });
+  }
 }
 
 export async function getAvatarVideo(

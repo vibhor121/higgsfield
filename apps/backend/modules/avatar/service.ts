@@ -1,6 +1,7 @@
 import { prisma } from "../../src/db";
 import type { AvatarModel, AvatarImageModel } from "../../src/generated/prisma/models";
 import type { AvatarImageType } from "../../src/generated/prisma/enums";
+import { generateImage } from "../../src/huggingface";
 
 export async function createAvatar(
   userId: string,
@@ -64,6 +65,21 @@ export async function getAvatarImages(
   if (avatar.userId !== userId) return { error: "Access denied", status: 403 };
   const images = await prisma.avatarImage.findMany({ where: { avatarId } });
   return { images };
+}
+
+export async function generateAvatarImage(
+  avatarId: string,
+  userId: string,
+  prompt: string
+): Promise<{ image: AvatarImageModel } | { error: string; status: number }> {
+  const avatar = await prisma.avatar.findUnique({ where: { id: avatarId } });
+  if (!avatar) return { error: "Avatar not found", status: 404 };
+  if (avatar.userId !== userId) return { error: "Access denied", status: 403 };
+  const url = await generateImage(prompt);
+  const image = await prisma.avatarImage.create({
+    data: { avatarId, type: "GENERATED", url },
+  });
+  return { image };
 }
 
 export async function deleteAvatarImage(

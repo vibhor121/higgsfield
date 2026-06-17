@@ -56,6 +56,7 @@ model AvatarVideo {
   width      Int
   height     Int
   status     VideoStatus @default(PENDING)
+  resultUrl  String?
   createdAt  DateTime    @default(now())
 
   user       User                   @relation(fields: [userId], references: [id])

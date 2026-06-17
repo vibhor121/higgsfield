@@ -10,6 +10,7 @@ import {
   addAvatarImage,
   getAvatarImages,
   deleteAvatarImage,
+  generateAvatarImage,
 } from "./service";
 
 const router = Router();
@@ -77,6 +78,25 @@ router.post("/avatars/:avatarId/images", authMiddleware, async (req, res) => {
     return;
   }
   res.status(201).json(outcome);
+});
+
+// POST /api/v1/avatars/:avatarId/generate-image
+router.post("/avatars/:avatarId/generate-image", authMiddleware, async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt || typeof prompt !== "string") {
+    res.status(422).json({ error: "prompt is required" });
+    return;
+  }
+  try {
+    const result = await generateAvatarImage(req.params["avatarId"] as string, req.userId!, prompt);
+    if ("error" in result) {
+      res.status(result.status).json({ error: result.error });
+      return;
+    }
+    res.status(201).json(result);
+  } catch (err: any) {
+    res.status(502).json({ error: err.message ?? "Image generation failed" });
+  }
 });
 
 // GET /api/v1/avatars/:avatarId/images

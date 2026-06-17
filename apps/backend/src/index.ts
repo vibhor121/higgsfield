@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { join } from "node:path";
 import { authRoutes } from "../modules/auth";
 import { avatarRoutes } from "../modules/avatar";
 import { videoRoutes } from "../modules/video";
@@ -10,6 +11,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/generated", express.static(join(import.meta.dir, "..", "public", "generated")));
 
 app.get("/", (_req, res) => {
   res.json({ message: "Higgsfield API is running" });
