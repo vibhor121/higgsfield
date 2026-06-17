@@ -1,7 +1,7 @@
 import { prisma } from "../../src/db";
 import type { Prisma } from "../../src/generated/prisma/client";
 import type { AvatarVideoModel } from "../../src/generated/prisma/models";
-import { generateVideo } from "../../src/huggingface";
+import { generateVideoWithStability } from "../../src/stability";
 
 type AvatarVideoWithReferences = Prisma.AvatarVideoGetPayload<{
   include: { references: { include: { avatar: true } } };
@@ -46,7 +46,7 @@ export async function startAvatarVideoGeneration(
 async function runVideoGeneration(videoId: string, prompt: string) {
   try {
     await prisma.avatarVideo.update({ where: { id: videoId }, data: { status: "PROCESSING" } });
-    const resultUrl = await generateVideo(prompt);
+    const resultUrl = await generateVideoWithStability(prompt);
     await prisma.avatarVideo.update({ where: { id: videoId }, data: { status: "COMPLETED", resultUrl } });
   } catch (err) {
     console.error("Video generation failed:", err);

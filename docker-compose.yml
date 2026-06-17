@@ -27,6 +27,8 @@ services:
       DATABASE_URL: postgresql://vibhor:password123@db:5432/higgsfield?schema=public
       JWT_SECRET: change-this-secret-in-production
       HUGGINGFACE_API_TOKEN: your_huggingface_token_here
+      REPLICATE_API_TOKEN: your_replicate_token_here
+      STABILITY_API_KEY: your_stability_api_key_here
     dns:
       - 8.8.8.8
       - 8.8.4.4
