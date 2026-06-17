@@ -1,27 +1,106 @@
 import { Router } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../../src/middleware/auth";
-import { updateAvatar } from "./service";
+import { AvatarImageType } from "../../src/generated/prisma/enums";
+import {
+  createAvatar,
+  getUserAvatars,
+  getAvatar,
+  deleteAvatar,
+  addAvatarImage,
+  getAvatarImages,
+  deleteAvatarImage,
+} from "./service";
 
 const router = Router();
 
-const avatarSchema = z.object({
-  avatarUrl: z.url("Valid avatar URL required"),
+const createAvatarSchema = z.object({
+  name: z.string().min(1, "Name is required"),
 });
 
-// POST /api/v1/avatar
-router.post("/avatar", authMiddleware, async (req, res) => {
-  const result = avatarSchema.safeParse(req.body);
+const addImageSchema = z.object({
+  type: z.enum(AvatarImageType),
+  url: z.url("Valid image URL required"),
+});
+
+// POST /api/v1/avatars
+router.post("/avatars", authMiddleware, async (req, res) => {
+  const result = createAvatarSchema.safeParse(req.body);
   if (!result.success) {
     res.status(422).json({ error: result.error.issues[0]?.message });
     return;
   }
-  const user = await updateAvatar(req.userId!, result.data.avatarUrl);
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
+  const avatar = await createAvatar(req.userId!, result.data.name);
+  res.status(201).json({ avatar });
+});
+
+// GET /api/v1/avatars
+router.get("/avatars", authMiddleware, async (req, res) => {
+  res.json(await getUserAvatars(req.userId!));
+});
+
+// GET /api/v1/avatars/:avatarId
+router.get("/avatars/:avatarId", authMiddleware, async (req, res) => {
+  const result = await getAvatar(req.params["avatarId"] as string, req.userId!);
+  if ("error" in result) {
+    res.status(result.status).json({ error: result.error });
     return;
   }
-  res.json({ message: "Avatar updated successfully", avatar: user.avatar });
+  res.json(result);
+});
+
+// DELETE /api/v1/avatars/:avatarId
+router.delete("/avatars/:avatarId", authMiddleware, async (req, res) => {
+  const result = await deleteAvatar(req.params["avatarId"] as string, req.userId!);
+  if ("error" in result) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  res.json({ message: "Avatar deleted successfully" });
+});
+
+// POST /api/v1/avatars/:avatarId/images
+router.post("/avatars/:avatarId/images", authMiddleware, async (req, res) => {
+  const result = addImageSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(422).json({ error: result.error.issues[0]?.message });
+    return;
+  }
+  const outcome = await addAvatarImage(
+    req.params["avatarId"] as string,
+    req.userId!,
+    result.data.type,
+    result.data.url
+  );
+  if ("error" in outcome) {
+    res.status(outcome.status).json({ error: outcome.error });
+    return;
+  }
+  res.status(201).json(outcome);
+});
+
+// GET /api/v1/avatars/:avatarId/images
+router.get("/avatars/:avatarId/images", authMiddleware, async (req, res) => {
+  const result = await getAvatarImages(req.params["avatarId"] as string, req.userId!);
+  if ("error" in result) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  res.json(result);
+});
+
+// DELETE /api/v1/avatars/:avatarId/images/:imageId
+router.delete("/avatars/:avatarId/images/:imageId", authMiddleware, async (req, res) => {
+  const result = await deleteAvatarImage(
+    req.params["avatarId"] as string,
+    req.params["imageId"] as string,
+    req.userId!
+  );
+  if ("error" in result) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  res.json({ message: "Image deleted successfully" });
 });
 
 export const avatarRoutes = router;

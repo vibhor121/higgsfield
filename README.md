@@ -143,9 +143,6 @@ Without global `turbo`:
 
 ```sh
 npx turbo link
-bun exec turbo link
-bun exec turbo link
-```
 
 ## Useful Links
 

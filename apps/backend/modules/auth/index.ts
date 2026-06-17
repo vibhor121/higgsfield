@@ -7,13 +7,12 @@ import { registerUser, validateCredentials, safeUser } from "./service";
 const router = Router();
 
 const signupSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Valid email required"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const signinSchema = z.object({
-  email: z.string().email("Valid email required"),
+  username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -24,10 +23,10 @@ router.post("/signup", async (req, res) => {
     res.status(422).json({ error: result.error.issues[0]?.message });
     return;
   }
-  const { name, email, password } = result.data;
-  const user = await registerUser(name, email, password);
+  const { username, password } = result.data;
+  const user = await registerUser(username, password);
   if (!user) {
-    res.status(409).json({ error: "Email already registered" });
+    res.status(409).json({ error: "Username already taken" });
     return;
   }
   const token = jwt.sign({ userId: user.id }, JWT_SECRET);
@@ -41,8 +40,8 @@ router.post("/signin", async (req, res) => {
     res.status(422).json({ error: result.error.issues[0]?.message });
     return;
   }
-  const { email, password } = result.data;
-  const user = await validateCredentials(email, password);
+  const { username, password } = result.data;
+  const user = await validateCredentials(username, password);
   if (!user) {
     res.status(401).json({ error: "Invalid credentials" });
     return;

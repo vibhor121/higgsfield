@@ -9,25 +9,66 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
+  username  String   @unique
   password  String
-  avatar    String?
   credits   Int      @default(100)
   createdAt DateTime @default(now())
-  videos    Video[]
+
+  avatars      Avatar[]
+  avatarVideos AvatarVideo[]
 }
 
-model Video {
-  id        String      @id @default(uuid())
+model Avatar {
+  id        String   @id @default(uuid())
   userId    String
-  title     String
-  prompt    String
-  modelId   String
-  status    VideoStatus @default(PENDING)
-  url       String?
-  createdAt DateTime    @default(now())
-  user      User        @relation(fields: [userId], references: [id])
+  name      String
+  createdAt DateTime @default(now())
+
+  user       User                   @relation(fields: [userId], references: [id])
+  images     AvatarImage[]
+  references AvatarVideoReference[]
+}
+
+model AvatarImage {
+  id        String          @id @default(uuid())
+  avatarId  String
+  type      AvatarImageType
+  url       String
+  createdAt DateTime        @default(now())
+
+  avatar Avatar @relation(fields: [avatarId], references: [id])
+}
+
+enum AvatarImageType {
+  FACE
+  FULL_BODY
+  STYLE_REFERENCE
+  GENERATED
+}
+
+model AvatarVideo {
+  id         String      @id @default(uuid())
+  userId     String
+  prompt     String
+  startFrame String?
+  endFrame   String?
+  duration   Int
+  width      Int
+  height     Int
+  status     VideoStatus @default(PENDING)
+  createdAt  DateTime    @default(now())
+
+  user       User                   @relation(fields: [userId], references: [id])
+  references AvatarVideoReference[]
+}
+
+model AvatarVideoReference {
+  id            String @id @default(uuid())
+  avatarVideoId String
+  avatarId      String
+
+  avatarVideo AvatarVideo @relation(fields: [avatarVideoId], references: [id])
+  avatar      Avatar      @relation(fields: [avatarId], references: [id])
 }
 
 enum VideoStatus {
